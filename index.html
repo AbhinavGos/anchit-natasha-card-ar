@@ -26,10 +26,8 @@
   html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#180a0d;color:#fff5e6;font-family:'Montserrat',sans-serif;-webkit-tap-highlight-color:transparent}
   body{touch-action:manipulation}
 
-  /* MindAR container and video/canvas elements */
-  #ar-container{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;z-index:0;display:none}
-  #ar-container video{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);min-width:100%;min-height:100%;width:auto;height:auto;object-fit:cover}
-  #ar-container canvas{position:absolute;inset:0;width:100%!important;height:100%!important;z-index:2}
+  /* MindAR container: fills viewport; MindAR internally sizes and positions video and canvas */
+  #ar-container{position:fixed;inset:0;width:100vw;height:100vh;overflow:hidden;z-index:0;display:none}
 
   /* Landing Screen */
   #landing{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;background:
@@ -121,7 +119,7 @@
     <div class="monogram">A &amp; N</div>
     <div class="eyebrow">Card-Anchored AR Invitation</div>
     <h1>Anchit &amp; Natasha</h1>
-    <div class="subtitle">Point camera at the wedding invitation or visiting card. The 3D traditional cards will pop up locked directly to the physical card surface!</div>
+    <div class="subtitle">Point camera at the physical wedding card placed on a table. The 3D traditional cards will pop up vertically standing right on the card surface!</div>
 
     <div class="preview-strip">
       <div class="preview-badge"><b>13 Nov</b>Mehndi &amp; Sagan</div>
@@ -194,8 +192,11 @@
 <div id="card-modal">
   <div class="modal-inner">
     <h3>Physical Target Card</h3>
-    <p>Point your phone camera at this card on another screen or printed card to see the 3D invitation lock onto it!</p>
-    <img id="targetPreviewImg" src="./target_card.png" class="target-img-preview" alt="Target Card">
+    <p>Place this card horizontally on a desk or open it on another screen/tablet. Point your phone camera at it to see the 3D invitation pop up vertically!</p>
+    <div style="background:#fff;padding:8px;border-radius:14px;display:inline-block;margin-bottom:12px;box-shadow:0 6px 20px rgba(0,0,0,0.5);">
+      <img id="targetPreviewImg" src="./target_card.png" class="target-img-preview" alt="Target Card" style="display:block;width:100%;max-width:280px;border-radius:8px;">
+    </div>
+    <p style="font-size:11px;color:#f5cb6c;margin:0 0 14px;line-height:1.4;">💡 Tip: If scanning off a tablet or laptop screen, keep screen brightness high and avoid reflections for instant lock.</p>
     <button class="close-modal-btn" id="closeModalBtn">Done / Back</button>
   </div>
 </div>
@@ -245,6 +246,7 @@ let cardMeshes = [];
 let cardsCarouselGroup = null;
 let petalsGroup = null;
 let fireworksGroup = null;
+let baseRing = null;
 let audioCtx = null, isMuted = false;
 
 const DURATION_PER_CARD = 4000;
@@ -539,8 +541,10 @@ async function startCardAnchoredAR() {
       imageTargetSrc: './targets.mind',
       filterMinCF: 0.0001,
       filterBeta: 1000,
-      warmupTolerance: 5,
-      missTolerance: 5
+      warmupTolerance: 2,
+      missTolerance: 10,
+      uiLoading: "no",
+      uiScanning: "no"
     });
 
     const { renderer, scene, camera } = mindarThree;
@@ -552,21 +556,58 @@ async function startCardAnchoredAR() {
     key.position.set(-2, 5, 4);
     scene.add(key);
 
+    // Front light specifically illuminating standing vertical cards
+    const frontLight = new THREE.DirectionalLight(0xfff8eb, 2.2);
+    frontLight.position.set(0, -3, 3);
+    scene.add(frontLight);
+
     // Anchor on Card Image Target
     const anchor = mindarThree.addAnchor(0);
 
-    // 3D Carousel Group - in MindAR image space:
-    // XY = card plane, +Z = toward camera (out of card face)
-    // PlaneGeometry already lives in XY — just offset in Z to float above card
+    // ── 3D Decorative Ground Base on Physical Card Surface (XY plane, Z = 0) ──
+    const basePlateGroup = new THREE.Group();
+    basePlateGroup.position.set(0, 0, 0.005);
+    anchor.group.add(basePlateGroup);
+
+    // Glowing ornate gold mandala ring flat on the card surface
+    const ringGeo = new THREE.RingGeometry(0.32, 0.46, 36);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0xf5cb6c,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.8
+    });
+    baseRing = new THREE.Mesh(ringGeo, ringMat);
+    basePlateGroup.add(baseRing);
+
+    // 3D Golden pedestal bar holding the vertical pop-up cards
+    const standGeo = new THREE.BoxGeometry(0.88, 0.035, 0.02);
+    const standMat = new THREE.MeshStandardMaterial({
+      color: 0xd4af37,
+      metalness: 0.85,
+      roughness: 0.2
+    });
+    const standMesh = new THREE.Mesh(standGeo, standMat);
+    standMesh.position.set(0, 0, 0.01);
+    basePlateGroup.add(standMesh);
+
+    // ── 3D Carousel Group: Stands UP VERTICALLY from Card Surface ──
+    // When the card is placed horizontally on a desk/table:
+    // +Z is normal (straight UP towards ceiling).
+    // -Y is towards the user in front of the table.
+    // rotation.x = Math.PI * 0.48 stands the cards upright with a slight 86° natural tilt!
     cardsCarouselGroup = new THREE.Group();
-    cardsCarouselGroup.position.set(0, 0, 0.1); // float 10cm above card face
-    // No rotation needed — XY plane = card plane in MindAR target space
+    cardsCarouselGroup.position.set(0, 0, 0.015);
+    cardsCarouselGroup.rotation.x = Math.PI * 0.48;
     anchor.group.add(cardsCarouselGroup);
 
-    // Build 3 Event Cards
+    // Build 3 Event Cards with bottom pivot
     const types = ['mehndi', 'haldi', 'wedding'];
-    const cardGeo = new THREE.PlaneGeometry(1.0, 1.5);
+    const cardGeo = new THREE.PlaneGeometry(0.85, 1.25);
+    // Shift geometry so bottom edge is at y = 0 (grounded on pedestal)
+    cardGeo.translate(0, 0.625, 0);
 
+    cardMeshes = [];
     types.forEach((t, i) => {
       const tex = createEventCardTexture(t);
       const mat = new THREE.MeshStandardMaterial({
@@ -576,13 +617,13 @@ async function startCardAnchoredAR() {
         metalness: 0.15
       });
       const mesh = new THREE.Mesh(cardGeo, mat);
-      mesh.position.y = 0; // centered on card in MindAR XY space
+      mesh.position.set(0, 0, 0);
       mesh.userData = { index: i };
       cardsCarouselGroup.add(mesh);
       cardMeshes.push(mesh);
     });
 
-    // Petals attached to card anchor
+    // Petals showering down above standing cards
     petalsGroup = new THREE.Group();
     const petalCount = 50;
     const petalGeo = new THREE.PlaneGeometry(0.04, 0.06);
@@ -592,14 +633,14 @@ async function startCardAnchoredAR() {
     for(let i=0; i<petalCount; i++){
       const mat = Math.random() > 0.4 ? marigoldMat : roseMat;
       const p = new THREE.Mesh(petalGeo, mat);
-      p.position.set((Math.random()-0.5)*2.0, Math.random()*1.8, (Math.random()-0.5)*2.0);
+      p.position.set((Math.random()-0.5)*1.8, Math.random()*1.8, (Math.random()-0.5)*0.8);
       p.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
       p.userData = { speedY: 0.005 + Math.random()*0.008, rotSpeed: 0.02 + Math.random()*0.03 };
       petalsGroup.add(p);
     }
     cardsCarouselGroup.add(petalsGroup);
 
-    // Fireworks attached to card anchor
+    // Fireworks attached above standing cards
     fireworksGroup = new THREE.Group();
     cardsCarouselGroup.add(fireworksGroup);
 
@@ -608,7 +649,11 @@ async function startCardAnchoredAR() {
       isTargetFound = true;
       scannerOverlay.style.display = 'none';
       lockedBadge.style.display = 'block';
+      if (navigator.vibrate) {
+        try { navigator.vibrate(100); } catch(e) {}
+      }
       spawnFireworkBurst(cardData[activeIndex].color);
+      spawnFireworkBurst(0xffd700);
     };
 
     anchor.onTargetLost = () => {
@@ -619,8 +664,12 @@ async function startCardAnchoredAR() {
 
     await mindarThree.start();
 
+    // Trigger resize to guarantee full viewport alignment
+    if (typeof mindarThree.resize === 'function') {
+      mindarThree.resize();
+    }
+
     loadingView.style.display = 'none';
-    // arContainer already shown before MindARThree instantiation
     scannerOverlay.style.display = 'flex';
     ui.style.display = 'block';
 
@@ -631,6 +680,7 @@ async function startCardAnchoredAR() {
       updatePetals();
       updateFireworks();
       updateStoryProgress();
+      if (baseRing) baseRing.rotation.z += 0.008;
       renderer.render(scene, camera);
     });
 
@@ -749,10 +799,10 @@ function setCard(idx) {
 function updateCarouselCards() {
   cardMeshes.forEach((mesh, i) => {
     const diff = i - activeIndex;
-    let targetX = diff * 1.15;
-    let targetZ = -Math.abs(diff) * 0.45;
-    let targetRotY = -diff * 0.35;
-    let targetScale = (i === activeIndex) ? 1.0 : 0.75;
+    let targetX = diff * 0.92;
+    let targetZ = -Math.abs(diff) * 0.25;
+    let targetRotY = -diff * 0.25;
+    let targetScale = (i === activeIndex) ? 1.0 : 0.76;
 
     mesh.position.x += (targetX - mesh.position.x) * 0.08;
     mesh.position.z += (targetZ - mesh.position.z) * 0.08;
@@ -762,7 +812,7 @@ function updateCarouselCards() {
     const newScale = currentScale + (targetScale - currentScale) * 0.08;
     mesh.scale.set(newScale, newScale, newScale);
 
-    mesh.position.y = 0 + Math.sin(performance.now()/1500 + i)*0.02;
+    mesh.position.y = Math.sin(performance.now() / 1200 + i) * 0.015;
   });
 }
 
