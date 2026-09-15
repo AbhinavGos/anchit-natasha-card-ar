@@ -529,6 +529,10 @@ async function startCardAnchoredAR() {
 
   initFestiveMusic();
 
+  // Bug 1 fix: arContainer must be visible BEFORE MindARThree is created
+  // so it can correctly measure the viewport size for its internal canvas/video.
+  arContainer.style.display = 'block';
+
   try {
     mindarThree = new MindARThree({
       container: arContainer,
@@ -551,11 +555,12 @@ async function startCardAnchoredAR() {
     // Anchor on Card Image Target
     const anchor = mindarThree.addAnchor(0);
 
-    // 3D Carousel Group rising vertically (+90 deg pitch) off the physical card
+    // 3D Carousel Group - in MindAR image space:
+    // XY = card plane, +Z = toward camera (out of card face)
+    // PlaneGeometry already lives in XY — just offset in Z to float above card
     cardsCarouselGroup = new THREE.Group();
-    cardsCarouselGroup.position.set(0, 0, 0.05);
-    // Stand up vertically from the card surface
-    cardsCarouselGroup.rotation.x = Math.PI / 2;
+    cardsCarouselGroup.position.set(0, 0, 0.1); // float 10cm above card face
+    // No rotation needed — XY plane = card plane in MindAR target space
     anchor.group.add(cardsCarouselGroup);
 
     // Build 3 Event Cards
@@ -571,7 +576,7 @@ async function startCardAnchoredAR() {
         metalness: 0.15
       });
       const mesh = new THREE.Mesh(cardGeo, mat);
-      mesh.position.y = 0.75;
+      mesh.position.y = 0; // centered on card in MindAR XY space
       mesh.userData = { index: i };
       cardsCarouselGroup.add(mesh);
       cardMeshes.push(mesh);
@@ -615,7 +620,7 @@ async function startCardAnchoredAR() {
     await mindarThree.start();
 
     loadingView.style.display = 'none';
-    arContainer.style.display = 'block';
+    // arContainer already shown before MindARThree instantiation
     scannerOverlay.style.display = 'flex';
     ui.style.display = 'block';
 
@@ -632,6 +637,7 @@ async function startCardAnchoredAR() {
   } catch(err) {
     console.error('AR Tracker Error:', err);
     loadingView.style.display = 'none';
+    arContainer.style.display = 'none'; // hide since start failed
     errorText.textContent = err?.message || 'Could not start camera or AR tracking.';
     errorBox.style.display = 'block';
   }
@@ -756,7 +762,7 @@ function updateCarouselCards() {
     const newScale = currentScale + (targetScale - currentScale) * 0.08;
     mesh.scale.set(newScale, newScale, newScale);
 
-    mesh.position.y = 0.75 + Math.sin(performance.now()/1500 + i)*0.02;
+    mesh.position.y = 0 + Math.sin(performance.now()/1500 + i)*0.02;
   });
 }
 
