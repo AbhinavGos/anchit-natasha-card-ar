@@ -10,9 +10,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Great+Vibes&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"></script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js",
+    "mindar-image": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js"
+  }
+}
+</script>
+
 <style>
   *{box-sizing:border-box}
   html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#180a0d;color:#fff5e6;font-family:'Montserrat',sans-serif;-webkit-tap-highlight-color:transparent}
@@ -191,10 +199,11 @@
   <button class="retry-btn" id="dismissError">Dismiss</button>
 </div>
 
-<script>
-// ----------------------------------------------------
-// UI Elements & State
-// ----------------------------------------------------
+<script type="module">
+import * as THREE from 'three';
+import { MindARThree } from 'mindar-image-three';
+import { Compiler } from 'mindar-image';
+
 const landing = document.getElementById('landing');
 const loadingView = document.getElementById('loading-view');
 const loadStatus = document.getElementById('loadStatus');
@@ -577,7 +586,7 @@ async function compileTargetImage() {
   img.src = targetCardDataUrl;
   await new Promise(res => { img.onload = res; });
 
-  const compiler = new MINDAR.IMAGE.Compiler();
+  const compiler = new Compiler();
   const dataList = await compiler.compileImageTargets([img], (progress) => {
     loadStatus.textContent = `Compiling Card Target: ${Math.round(progress)}%`;
   });
@@ -599,7 +608,7 @@ async function startCardAnchoredAR() {
     const targetMindUrl = await compileTargetImage();
     loadStatus.textContent = 'Starting Camera & AR Tracker...';
 
-    mindarThree = new window.MINDAR.IMAGE.MindARThree({
+    mindarThree = new MindARThree({
       container: arContainer,
       imageTargetSrc: targetMindUrl,
       filterMinCF: 0.001,
