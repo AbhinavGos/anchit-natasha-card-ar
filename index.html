@@ -11,10 +11,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Great+Vibes&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+<!-- ES Module Import Map for Three.js and MindAR -->
 <script type="importmap">
 {
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
     "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js",
     "mindar-image": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js"
   }
@@ -30,11 +32,13 @@
   #ar-container video{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);min-width:100%;min-height:100%;width:auto;height:auto;object-fit:cover}
   #ar-container canvas{position:absolute;inset:0;width:100%!important;height:100%!important;z-index:2}
 
+  #fallback-canvas{position:fixed;inset:0;z-index:2;display:none;width:100%;height:100%}
+
   #landing{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;background:
     radial-gradient(circle at 50% 22%,rgba(235,188,90,.25),transparent 40%),
     linear-gradient(160deg,#1f090d,#3d0e16 50%,#160508);overflow-y:auto}
 
-  .card-frame{max-width:540px;width:100%;border:1px solid rgba(235,188,90,.5);border-radius:24px;padding:32px 22px;background:rgba(28,9,14,.85);backdrop-filter:blur(14px);box-shadow:0 16px 48px rgba(0,0,0,.75),inset 0 0 24px rgba(235,188,90,.18);position:relative}
+  .card-frame{max-width:540px;width:100%;border:1px solid rgba(235,188,90,.5);border-radius:24px;padding:32px 22px;background:rgba(28,9,14,.88);backdrop-filter:blur(14px);box-shadow:0 16px 48px rgba(0,0,0,.75),inset 0 0 24px rgba(235,188,90,.18);position:relative}
   .card-frame::before{content:"";position:absolute;inset:6px;border:1px dashed rgba(235,188,90,.35);border-radius:18px;pointer-events:none}
 
   .monogram{font-family:'Great Vibes',cursive;font-size:54px;color:#f3cf7a;line-height:1;margin-bottom:6px;text-shadow:0 2px 10px rgba(243,207,122,.4)}
@@ -55,7 +59,7 @@
   .btn-gold{margin-top:10px;padding:16px 32px;border:1px solid rgba(255,225,150,.8);border-radius:999px;background:linear-gradient(135deg,#f7d785,#d9a138 50%,#b37b1b);color:#21080b;font-family:'Cinzel',serif;font-weight:700;letter-spacing:.08em;font-size:14px;cursor:pointer;box-shadow:0 8px 28px rgba(217,161,56,.35);transition:transform .2s,box-shadow .2s;width:100%}
   .btn-gold:active{transform:scale(.97)}
 
-  .btn-secondary{margin-top:10px;padding:10px 20px;border:1px solid rgba(235,188,90,.4);border-radius:999px;background:rgba(235,188,90,.12);color:#f5cb6c;font-family:'Cinzel',serif;font-size:11px;letter-spacing:.08em;cursor:pointer;width:100%}
+  .btn-secondary{margin-top:10px;padding:12px 20px;border:1px solid rgba(235,188,90,.4);border-radius:999px;background:rgba(235,188,90,.12);color:#f5cb6c;font-family:'Cinzel',serif;font-size:11px;letter-spacing:.08em;cursor:pointer;width:100%}
 
   /* Scanning Viewfinder Overlay */
   #scanner-overlay{position:fixed;inset:0;z-index:10;display:none;pointer-events:none;align-items:center;justify-content:center;flex-direction:column}
@@ -148,6 +152,7 @@
 
 <!-- AR Viewport -->
 <div id="ar-container"></div>
+<canvas id="fallback-canvas"></canvas>
 
 <!-- UI Controls -->
 <div id="ui">
@@ -199,68 +204,15 @@
   <button class="retry-btn" id="dismissError">Dismiss</button>
 </div>
 
-<script type="module">
-import * as THREE from 'three';
-import { MindARThree } from 'mindar-image-three';
-import { Compiler } from 'mindar-image';
-
-const landing = document.getElementById('landing');
-const loadingView = document.getElementById('loading-view');
-const loadStatus = document.getElementById('loadStatus');
-const scannerOverlay = document.getElementById('scanner-overlay');
-const arContainer = document.getElementById('ar-container');
-const ui = document.getElementById('ui');
-const errorBox = document.getElementById('error');
-const errorText = document.getElementById('errorText');
-const dismissError = document.getElementById('dismissError');
-const musicBtn = document.getElementById('musicBtn');
-const closeBtn = document.getElementById('closeBtn');
-const prevBtn = document.getElementById('prevBtn');
-const nextBtn = document.getElementById('nextBtn');
-const dockTitle = document.getElementById('dockTitle');
-const dockDate = document.getElementById('dockDate');
-const cardTabBtns = document.querySelectorAll('.card-tab-btn');
-const fills = [document.getElementById('fill0'), document.getElementById('fill1'), document.getElementById('fill2')];
+<!-- Standard Script for Modal & Direct UI Handlers -->
+<script>
 const cardModal = document.getElementById('card-modal');
 const viewCardBtn = document.getElementById('viewCardBtn');
 const closeModalBtn = document.getElementById('closeModalBtn');
 const targetPreviewImg = document.getElementById('targetPreviewImg');
 
-let mindarThree = null;
-let cardMeshes = [];
-let cardsCarouselGroup = null;
-let petalsGroup = null;
-let fireworksGroup = null;
-let audioCtx = null, isMuted = false;
-
-const DURATION_PER_CARD = 4000;
-let activeIndex = 0;
-let slideStartTime = 0;
-let isAutoPlaying = true;
-let isTargetFound = false;
-
-const cardData = [
-  {
-    title: "Mehndi & Sagan",
-    date: "Wednesday · 13th November · New Delhi",
-    color: 0x2e8b57
-  },
-  {
-    title: "Haldi & Grand Baraat",
-    date: "Thursday · 14th November · New Delhi",
-    color: 0xffb703
-  },
-  {
-    title: "Anand Karaj & Reception",
-    date: "Friday · 15th November · New Delhi",
-    color: 0xd90429
-  }
-];
-
-// ----------------------------------------------------
-// Generate Target Physical Card Canvas Image
-// ----------------------------------------------------
-function generateTargetCardDataUrl() {
+// Generate Card Preview immediately
+function generatePreview() {
   const W = 750, H = 1125;
   const cvs = document.createElement('canvas');
   cvs.width = W; cvs.height = H;
@@ -303,7 +255,6 @@ function generateTargetCardDataUrl() {
   ctx.font = 'bold 72px Georgia, serif';
   ctx.fillText('Natasha', W / 2, 394);
 
-  // Couple silhouette / illustration on base card
   ctx.fillStyle = '#b91c1c';
   ctx.beginPath();
   ctx.moveTo(W/2 - 80, 680);
@@ -326,8 +277,71 @@ function generateTargetCardDataUrl() {
   return cvs.toDataURL('image/png');
 }
 
-const targetCardDataUrl = generateTargetCardDataUrl();
-targetPreviewImg.src = targetCardDataUrl;
+window.targetCardDataUrl = generatePreview();
+targetPreviewImg.src = window.targetCardDataUrl;
+
+viewCardBtn.onclick = function() {
+  cardModal.style.display = 'flex';
+};
+closeModalBtn.onclick = function() {
+  cardModal.style.display = 'none';
+};
+</script>
+
+<!-- Module Script for AR Engine -->
+<script type="module">
+import * as THREE from 'three';
+import { MindARThree } from 'mindar-image-three';
+import { Compiler } from 'mindar-image';
+
+const landing = document.getElementById('landing');
+const loadingView = document.getElementById('loading-view');
+const loadStatus = document.getElementById('loadStatus');
+const scannerOverlay = document.getElementById('scanner-overlay');
+const arContainer = document.getElementById('ar-container');
+const ui = document.getElementById('ui');
+const errorBox = document.getElementById('error');
+const errorText = document.getElementById('errorText');
+const dismissError = document.getElementById('dismissError');
+const musicBtn = document.getElementById('musicBtn');
+const closeBtn = document.getElementById('closeBtn');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const dockTitle = document.getElementById('dockTitle');
+const dockDate = document.getElementById('dockDate');
+const cardTabBtns = document.querySelectorAll('.card-tab-btn');
+const fills = [document.getElementById('fill0'), document.getElementById('fill1'), document.getElementById('fill2')];
+
+let mindarThree = null;
+let cardMeshes = [];
+let cardsCarouselGroup = null;
+let petalsGroup = null;
+let fireworksGroup = null;
+let audioCtx = null, isMuted = false;
+
+const DURATION_PER_CARD = 4000;
+let activeIndex = 0;
+let slideStartTime = 0;
+let isAutoPlaying = true;
+let isTargetFound = false;
+
+const cardData = [
+  {
+    title: "Mehndi & Sagan",
+    date: "Wednesday · 13th November · New Delhi",
+    color: 0x2e8b57
+  },
+  {
+    title: "Haldi & Grand Baraat",
+    date: "Thursday · 14th November · New Delhi",
+    color: 0xffb703
+  },
+  {
+    title: "Anand Karaj & Reception",
+    date: "Friday · 15th November · New Delhi",
+    color: 0xd90429
+  }
+];
 
 // ----------------------------------------------------
 // Traditional 3D Event Card Texture Generator
@@ -583,7 +597,7 @@ function toggleAudio() {
 async function compileTargetImage() {
   loadStatus.textContent = 'Compiling Wedding Card Target...';
   const img = new Image();
-  img.src = targetCardDataUrl;
+  img.src = window.targetCardDataUrl;
   await new Promise(res => { img.onload = res; });
 
   const compiler = new Compiler();
@@ -706,6 +720,7 @@ async function startCardAnchoredAR() {
     });
 
   } catch(err) {
+    console.error('AR Tracker Error:', err);
     loadingView.style.display = 'none';
     errorText.textContent = err?.message || 'Could not start camera or AR tracking.';
     errorBox.style.display = 'block';
@@ -881,9 +896,6 @@ document.getElementById('start').onclick = startCardAnchoredAR;
 closeBtn.onclick = closeAR;
 musicBtn.onclick = toggleAudio;
 dismissError.onclick = () => { errorBox.style.display = 'none'; };
-
-viewCardBtn.onclick = () => { cardModal.style.display = 'flex'; };
-closeModalBtn.onclick = () => { cardModal.style.display = 'none'; };
 </script>
 </body>
 </html>
