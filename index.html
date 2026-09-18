@@ -300,90 +300,106 @@ function createEventCardTexture(type) {
   ctx.setLineDash([]);
 
   if (type === 'mehndi') {
-    ctx.strokeStyle = '#c59b27';
-    ctx.lineWidth = 6;
-    ctx.beginPath();
-    ctx.moveTo(120, 420);
-    ctx.bezierCurveTo(120, 140, w - 120, 140, w - 120, 420);
-    ctx.stroke();
-
-    ctx.font = '600 24px "Cinzel", serif';
+    ctx.font = '700 28px "Cinzel", serif';
     ctx.fillStyle = '#6b4c1b';
     ctx.textAlign = 'center';
-    ctx.fillText('JOIN US IN THE WEDDING CELEBRATION OF', w/2, 170);
+    ctx.fillText('JOIN US IN THE CELEBRATION OF', w/2, 175);
 
-    ctx.font = '700 68px "Cinzel", serif';
+    ctx.font = '800 74px "Cinzel", serif';
     ctx.fillStyle = '#1c3d25';
-    ctx.fillText('Anchit & Natasha', w/2, 245);
+    ctx.fillText('Anchit & Natasha', w/2, 255);
+
+    // Event pill badge for high contrast & instant legibility
+    ctx.fillStyle = '#2d6a4f';
+    ctx.beginPath();
+    ctx.roundRect(w/2 - 270, 292, 540, 66, 33);
+    ctx.fill();
+    ctx.strokeStyle = '#d4af37';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.font = 'bold 38px "Cinzel", serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('MEHNDI & SAGAN', w/2, 338);
+
+    ctx.font = '600 34px "Playfair Display", serif';
+    ctx.fillStyle = '#2b1d12';
+    ctx.fillText('Wednesday · November 13, 2024', w/2, 405);
+
+    ctx.font = '700 28px "Montserrat", sans-serif';
+    ctx.fillStyle = '#8c6328';
+    ctx.fillText('NEW DELHI', w/2, 448);
+
+    drawCoupleAvatar(ctx, w/2, 920, '#2d6a4f', '#d90429', '#1b4332', '#e9c46a');
+  } else if (type === 'haldi') {
+    ctx.font = '700 28px "Cinzel", serif';
+    ctx.fillStyle = '#78350f';
+    ctx.textAlign = 'center';
+    ctx.fillText('WE CORDIALLY INVITE YOU TO', w/2, 175);
+
+    ctx.font = '800 74px "Cinzel", serif';
+    ctx.fillStyle = '#78350f';
+    ctx.fillText('Anchit & Natasha', w/2, 255);
+
+    // Event pill badge
+    ctx.fillStyle = '#d97706';
+    ctx.beginPath();
+    ctx.roundRect(w/2 - 310, 292, 620, 66, 33);
+    ctx.fill();
+    ctx.strokeStyle = '#fef3c7';
+    ctx.lineWidth = 3;
+    ctx.stroke();
 
     ctx.font = 'bold 36px "Cinzel", serif';
-    ctx.fillStyle = '#c59b27';
-    ctx.fillText('MEHNDI & SAGAN', w/2, 315);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('HALDI & GRAND BARAAT', w/2, 338);
 
-    ctx.font = '500 28px "Playfair Display", serif';
-    ctx.fillStyle = '#4a3b32';
-    ctx.fillText('Wednesday · November 13, 2024', w/2, 365);
-    ctx.font = '600 22px "Montserrat", sans-serif';
-    ctx.fillStyle = '#8c7355';
-    ctx.fillText('NEW DELHI', w/2, 400);
+    ctx.font = '600 34px "Playfair Display", serif';
+    ctx.fillStyle = '#2b1d12';
+    ctx.fillText('Thursday · November 14, 2024', w/2, 405);
 
-    drawCoupleAvatar(ctx, w/2, 880, '#2d6a4f', '#d90429', '#1b4332', '#e9c46a');
-  } else if (type === 'haldi') {
-    ctx.font = '600 24px "Cinzel", serif';
-    ctx.fillStyle = '#8a5d00';
-    ctx.textAlign = 'center';
-    ctx.fillText('WE CORDIALLY INVITE YOU TO THE', w/2, 220);
-
-    ctx.font = '800 56px "Cinzel", serif';
-    ctx.fillStyle = '#d97706';
-    ctx.fillText('HALDI CEREMONY', w/2, 290);
-
-    ctx.font = 'italic 28px "Playfair Display", serif';
-    ctx.fillStyle = '#6b5123';
-    ctx.fillText('& Grand Baraat of', w/2, 340);
-
-    ctx.font = '700 64px "Cinzel", serif';
-    ctx.fillStyle = '#78350f';
-    ctx.fillText('Anchit & Natasha', w/2, 410);
-
-    ctx.font = '500 28px "Playfair Display", serif';
-    ctx.fillStyle = '#4a3b32';
-    ctx.fillText('Thursday · November 14, 2024', w/2, 465);
-    ctx.font = '600 22px "Montserrat", sans-serif';
+    ctx.font = '700 28px "Montserrat", sans-serif';
     ctx.fillStyle = '#b45309';
-    ctx.fillText('NEW DELHI', w/2, 500);
+    ctx.fillText('NEW DELHI', w/2, 448);
 
-    drawCoupleAvatar(ctx, w/2, 940, '#facc15', '#f59e0b', '#0284c7', '#fde047');
+    drawCoupleAvatar(ctx, w/2, 920, '#facc15', '#f59e0b', '#0284c7', '#fde047');
   } else {
-    ctx.font = '600 24px "Cinzel", serif';
+    ctx.font = '700 28px "Cinzel", serif';
     ctx.fillStyle = '#7f1d1d';
     ctx.textAlign = 'center';
-    ctx.fillText('WITH THE BLESSINGS OF ALMIGHTY', w/2, 220);
+    ctx.fillText('WITH THE BLESSINGS OF ALMIGHTY', w/2, 175);
 
-    ctx.font = '800 50px "Cinzel", serif';
-    ctx.fillStyle = '#991b1b';
-    ctx.fillText('ANAND KARAJ', w/2, 285);
-
-    ctx.font = '700 36px "Cinzel", serif';
-    ctx.fillStyle = '#b45309';
-    ctx.fillText('& ROYAL RECEPTION', w/2, 335);
-
-    ctx.font = '700 66px "Cinzel", serif';
+    ctx.font = '800 74px "Cinzel", serif';
     ctx.fillStyle = '#450a0a';
-    ctx.fillText('Anchit & Natasha', w/2, 410);
+    ctx.fillText('Anchit & Natasha', w/2, 255);
 
-    ctx.font = '500 28px "Playfair Display", serif';
-    ctx.fillStyle = '#4a3b32';
-    ctx.fillText('Friday · November 15, 2024', w/2, 465);
-    ctx.font = '600 22px "Montserrat", sans-serif';
+    // Event pill badge
     ctx.fillStyle = '#991b1b';
-    ctx.fillText('NEW DELHI', w/2, 500);
+    ctx.beginPath();
+    ctx.roundRect(w/2 - 330, 292, 660, 66, 33);
+    ctx.fill();
+    ctx.strokeStyle = '#fde68a';
+    ctx.lineWidth = 3;
+    ctx.stroke();
 
-    drawCoupleAvatar(ctx, w/2, 960, '#b91c1c', '#dc2626', '#1e1b4b', '#d4af37');
+    ctx.font = 'bold 34px "Cinzel", serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('ANAND KARAJ & RECEPTION', w/2, 338);
+
+    ctx.font = '600 34px "Playfair Display", serif';
+    ctx.fillStyle = '#2b1d12';
+    ctx.fillText('Friday · November 15, 2024', w/2, 405);
+
+    ctx.font = '700 28px "Montserrat", sans-serif';
+    ctx.fillStyle = '#991b1b';
+    ctx.fillText('NEW DELHI', w/2, 448);
+
+    drawCoupleAvatar(ctx, w/2, 920, '#b91c1c', '#dc2626', '#1e1b4b', '#d4af37');
   }
 
   const texture = new THREE.CanvasTexture(cvs);
-  texture.anisotropy = 8;
+  texture.anisotropy = 16;
+  texture.needsUpdate = true;
   return texture;
 }
 
@@ -591,14 +607,14 @@ async function startCardAnchoredAR() {
     standMesh.position.set(0, 0, 0.01);
     basePlateGroup.add(standMesh);
 
-    // ── 3D Carousel Group: Stands UP VERTICALLY from Card Surface ──
+    // ── 3D Carousel Group: Stands UP from Card Surface facing camera ──
     // When the card is placed horizontally on a desk/table:
-    // +Z is normal (straight UP towards ceiling).
-    // -Y is towards the user in front of the table.
-    // rotation.x = Math.PI * 0.48 stands the cards upright with a slight 86° natural tilt!
+    // +Z is normal (straight UP towards ceiling), -Y is towards the user.
+    // rotation.x = Math.PI * 0.35 (~63°) tilts the card directly towards the user's line of sight,
+    // making the text square, upright, and crystal-clear to read without perspective distortion!
     cardsCarouselGroup = new THREE.Group();
     cardsCarouselGroup.position.set(0, 0, 0.015);
-    cardsCarouselGroup.rotation.x = Math.PI * 0.48;
+    cardsCarouselGroup.rotation.x = Math.PI * 0.35;
     anchor.group.add(cardsCarouselGroup);
 
     // Build 3 Event Cards with bottom pivot
